@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
         import Axios from 'axios';
         import Swal from 'sweetalert2';
         import 'bootstrap/dist/css/bootstrap.min.css';
+        import DatePicker from 'react-datepicker';
+        import 'react-datepicker/dist/react-datepicker.css';
 
         function Productos() {
         const [id_producto, setIdProducto] = useState("");
@@ -290,10 +292,13 @@ import React, { useState, useEffect } from 'react';
                         </select>
                         </div>
                         <div className="input-group mb-3">
-                            <span className="input-group-text" id="basic-addon1">Fecha:</span>
-                            <input type="text" 
-                            onChange={(event)=>{setFecha_Creacion(event.target.value);}}
-                            className="form-control" value={fecha_creacion} placeholder="Ingrese la fecha de creacion" aria-label="Fecha de creacion del producto" aria-describedby="basic-addon1"/>
+                                    <span className="input-group-text" id="basic-addon1">Fecha:</span>
+                                    <DatePicker
+                                        selected={fecha_creacion}
+                                        onChange={date => setFecha_Creacion(date)}
+                                        className="form-control"
+                                        dateFormat="yyyy-MM-dd"
+                                    />
                         </div>
                         <div className="input-group mb-3">
                             <span className="input-group-text" id="basic-addon1">Estatus:</span>

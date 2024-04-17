@@ -10,7 +10,6 @@ import logotipo from './img/logo1.png';
 import Productos from "./screen/Productos";
 import Inventario from "./screen/Inventario";
 import Buscador2 from "./screen/buscador2";
-import Login from "./screen/Login";
 
 
 function App() {

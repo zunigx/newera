@@ -17,7 +17,8 @@ const db = mysql.createConnection({
 
 //APIS DE USUARIOS
 //Insertar Usuarios
-app.post("/create", (req,res)=>{
+// Insertar Usuarios
+app.post("/create", (req, res) => {
     const nombre1 = req.body.nombre1;
     const apellido1 = req.body.apellido1;
     const usuario = req.body.usuario;
@@ -25,16 +26,32 @@ app.post("/create", (req,res)=>{
     const estatus = req.body.estatus;
     const id_perfil = req.body.id_perfil;
 
+    // Verifica si algún campo está vacío
+    if (!nombre1 || !apellido1 || !usuario || !clave || !estatus || !id_perfil) {
+        res.status(400).send("Todos los campos son obligatorios.");
+        return;
+    }
 
+    // Validar el formato del correo electrónico
+    const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!regexCorreo.test(usuario)) {
+        res.status(400).send("El formato del correo electrónico es inválido.");
+        return;
+    }
+
+    // Si ningún campo está vacío y el formato del correo electrónico es válido, procede con la inserción en la base de datos
     db.query("INSERT INTO tusuario (nombre1, apellido1, usuario, clave, estatus, id_perfil) VALUES (?,?,?,?,?,?)", [nombre1, apellido1, usuario, clave, estatus, id_perfil],
-    (err,result)=>{
-        if(err){
-            console.log(err);
-        }else{
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error interno del servidor");
+                return;
+            }
             res.send(result);
-        }
-    });
+        });
 });
+
+
 
 //Mostrar Usuarios
 app.get("/usuarios", (req,res)=>{
@@ -117,20 +134,30 @@ app.delete("/delete/:id_usuario", (req,res)=>{
 //Fin de APIS USUARIOS
 
 //APIS Provedores
-app.post("/createProve", (req,res)=>{
+
+//insertar proveedor
+app.post("/createProve", (req, res) => {
     const nombreProv = req.body.nombreProv;
     const estatus = req.body.estatus;
 
+    // Verifica si algún campo está vacío
+    if (!nombreProv || !estatus) {
+        res.status(400).send("Todos los campos son obligatorios.");
+        return;
+    }
 
-    db.query("INSERT INTO tprovedor (nombreProv, estatus) VALUES (?,?)", [nombreProv,estatus],
-    (err,result)=>{
-        if(err){
-            console.log(err);
-        }else{
+    // Si ningún campo está vacío, procede con la inserción en la base de datos
+    db.query("INSERT INTO tprovedor (nombreProv, estatus) VALUES (?,?)", [nombreProv, estatus],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error interno del servidor");
+                return;
+            }
             res.send(result);
-        }
-    });
+        });
 });
+
 
 //Mostrar Provedores
 app.get("/Provedores", (req,res)=>{
@@ -210,24 +237,34 @@ app.delete("/deleteProv/:id_provedor", (req,res)=>{
 //Fin de APIS Provedores
 
 //APIS Sucursales
-app.post("/createSuc", (req,res)=>{
-    const imagen_Sucursal = req.body.imagen_Sucursal
+
+//insertar sucursales
+app.post("/createSuc", (req, res) => {
+    const imagen_Sucursal = req.body.imagen_Sucursal;
     const nombre = req.body.nombre;
     const estado = req.body.estado;
     const direccion = req.body.direccion;
     const telefono = req.body.telefono;
     const estatus = req.body.estatus;
 
+    // Verifica si algún campo está vacío
+    if (!imagen_Sucursal || !nombre || !estado || !direccion || !telefono || !estatus) {
+        res.status(400).send("Todos los campos son obligatorios.");
+        return;
+    }
 
-    db.query("INSERT INTO tsucursal (imagen_Sucursal, nombre, estado, direccion, telefono, estatus) VALUES (?,?,?,?,?,?)", [imagen_Sucursal,nombre,estado,direccion,telefono,estatus],
-    (err,result)=>{
-        if(err){
-            console.log(err);
-        }else{
+    // Si ningún campo está vacío, procede con la inserción en la base de datos
+    db.query("INSERT INTO tsucursal (imagen_Sucursal, nombre, estado, direccion, telefono, estatus) VALUES (?,?,?,?,?,?)", [imagen_Sucursal, nombre, estado, direccion, telefono, estatus],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error interno del servidor");
+                return;
+            }
             res.send(result);
-        }
-    });
+        });
 });
+
 
 //Mostrar Sucursales
 app.get("/Sucursales", (req,res)=>{
@@ -295,21 +332,42 @@ app.put("/updateAltaSuc/:id_sucursal", (req,res)=>{
 
 
 //Borrar Sucursales
-app.delete("/deleteSuc/:id_sucursal", (req,res)=>{
+app.delete("/deleteSuc/:id_sucursal", (req, res) => {
     const id_sucursal = req.params.id_sucursal;
 
-    db.query("DELETE FROM tsucursal WHERE id_sucursal=?", id_sucursal,
-    (err,result)=>{
-        if(err){
+    // Primero, verifica si la sucursal tiene productos en su inventario
+    db.query("SELECT * FROM tinventario WHERE id_sucursal=?", id_sucursal, (err, result) => {
+        if (err) {
             console.log(err);
-        }else{
-            res.send(result);
+            res.status(500).send("Error interno del servidor");
+            return;
         }
+
+        if (result.length > 0) {
+            // Si la sucursal tiene productos en su inventario, devuelve un mensaje indicando que no se puede eliminar
+            res.status(400).send("La sucursal tiene productos en su inventario y no puede ser eliminada.");
+            return;
+        }
+
+        // Si la sucursal no tiene productos en su inventario, procede a eliminarla
+        db.query("DELETE FROM tsucursal WHERE id_sucursal=?", id_sucursal, (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error interno del servidor");
+                return;
+            }
+            
+            // Envía una respuesta exitosa si la sucursal se elimina correctamente
+            res.send("Sucursal eliminada correctamente.");
+        });
     });
 });
+
 //Fin de APIS Sucursales
 
 // APIS Productos
+
+//insertar producto
 app.post("/createProduct", (req, res) => {
     const nombre = req.body.nombre;
     const imagen = req.body.imagen;
@@ -320,18 +378,25 @@ app.post("/createProduct", (req, res) => {
     const fecha_creacion = req.body.fecha_creacion;
     const id_provedor = req.body.id_provedor;
 
-        db.query("INSERT INTO tproductos (nombre, imagen, descripcion, categoria, precio, estatus, fecha_creacion, id_provedor) VALUES (?,?,?,?,?,?,?,?)",
-            [nombre, imagen, descripcion, categoria, precio, estatus, fecha_creacion, id_provedor],
-            (err, result) => {
-                if (err) {
-                    console.log(err);
-                    res.status(500).send("Error al insertar el producto.");
-                } else {
-                    res.status(200).send("Producto insertado correctamente.");
-                }
-            });
-    
+    // Verifica si algún campo está vacío
+    if (!nombre || !imagen || !descripcion || !categoria || !precio || !estatus || !fecha_creacion || !id_provedor) {
+        res.status(400).send("Todos los campos son obligatorios.");
+        return;
+    }
+
+    // Si ningún campo está vacío, procede con la inserción en la base de datos
+    db.query("INSERT INTO tproductos (nombre, imagen, descripcion, categoria, precio, estatus, fecha_creacion, id_provedor) VALUES (?,?,?,?,?,?,?,?)",
+        [nombre, imagen, descripcion, categoria, precio, estatus, fecha_creacion, id_provedor],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error al insertar el producto.");
+                return;
+            }
+            res.status(200).send("Producto insertado correctamente.");
+        });
 });
+
 
 //Mostrar Productos y nombre del provedor
 app.get("/Productos", (req,res)=>{
@@ -401,21 +466,40 @@ app.put("/updateAltaProduc/:id_producto", (req,res)=>{
 
 
 //Borrar Productos
-app.delete("/deleteProduc/:id_producto", (req,res)=>{
+app.delete("/deleteProduct/:id_producto", (req, res) => {
     const id_producto = req.params.id_producto;
 
-    db.query("DELETE FROM tproductos WHERE id_producto=?", id_producto,
-    (err,result)=>{
-        if(err){
+    // Primero, verifica si el producto está asociado a alguna sucursal
+    db.query("SELECT * FROM tsucursal WHERE id_producto=?", id_producto, (err, result) => {
+        if (err) {
             console.log(err);
-        }else{
-            res.send(result);
+            res.status(500).send("Error interno del servidor");
+            return;
         }
+
+        if (result.length > 0) {
+            // Si el producto está asociado a alguna sucursal, devuelve un mensaje indicando que no se puede eliminar
+            res.status(400).send("El producto está asociado a una sucursal y no puede ser eliminado.");
+            return;
+        }
+
+        // Si el producto no está asociado a ninguna sucursal, procede a eliminarlo
+        db.query("DELETE FROM tproductos WHERE id_producto=?", id_producto, (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error interno del servidor");
+                return;
+            }
+            
+            // Envía una respuesta exitosa si el producto se elimina correctamente
+            res.send("Producto eliminado correctamente.");
+        });
     });
 });
 //Fin de APIS Productos
 
 //Apis de Inventario
+//insertar inventario
 app.post("/createInventario", (req, res) => {
     const existencias = req.body.existencias;
     const minimo = req.body.minimo;
@@ -424,18 +508,25 @@ app.post("/createInventario", (req, res) => {
     const id_sucursal = req.body.id_sucursal;
     const id_provedor = req.body.id_provedor;
 
-        db.query("INSERT INTO tinventario (existencias, minimo, maximo, id_producto, id_sucursal, id_provedor) VALUES (?,?,?,?,?,?)",
-            [existencias, minimo, maximo, id_producto, id_sucursal, id_provedor],
-            (err, result) => {
-                if (err) {
-                    console.log(err);
-                    res.status(500).send("Error al insertar el inventario.");
-                } else {
-                    res.status(200).send("Inventario insertado correctamente.");
-                }
-            });
-    
+    // Verifica si algún campo está vacío
+    if (!existencias || !id_producto || !id_sucursal || !id_provedor) {
+        res.status(400).send("Todos los campos son obligatorios.");
+        return;
+    }
+
+    // Si ningún campo está vacío, procede con la inserción en la base de datos
+    db.query("INSERT INTO tinventario (existencias, minimo, maximo, id_producto, id_sucursal, id_provedor) VALUES (?,?,?,?,?,?)",
+        [existencias, minimo, maximo, id_producto, id_sucursal, id_provedor],
+        (err, result) => {
+            if (err) {
+                console.log(err);
+                res.status(500).send("Error al insertar el inventario.");
+                return;
+            }
+            res.status(200).send("Inventario insertado correctamente.");
+        });
 });
+
 
 //Mostrar Inventario y nombre del producto,nombre de la sucursal y nombre deL provedor 
 app.get("/Inventario", (req,res)=>{
